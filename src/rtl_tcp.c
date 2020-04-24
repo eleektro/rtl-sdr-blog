@@ -72,6 +72,7 @@ typedef struct { /* structure size must be multiple of 2 bytes */
 static rtlsdr_dev_t *dev = NULL;
 
 static int enable_biastee = 0;
+static int enable_offset_tuning = 0;
 
 // Ring Buffer declarations
 // 8MB appears to cover several seconds at high bitrates -- about as much lag as you'd want
@@ -99,6 +100,7 @@ void usage(void)
 		"\t[-d device index (default: 0)]\n"
 		"\t[-P ppm_error (default: 0)]\n"
 		"\t[-T enable bias-T on GPIO PIN 0 (works for rtl-sdr.com v3 dongles)]\n"
+		"\t[-O enable offset tuning (E4000 tuner)]\n"
 		"\t[-D enable direct sampling (default: off)]\n");
 	exit(1);
 }
@@ -393,7 +395,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact, sigign;
 #endif
 
-	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:d:P:T:D")) != -1) {
+	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:d:P:T:O:D")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = verbose_device_search(optarg);
@@ -422,6 +424,9 @@ int main(int argc, char **argv)
 			break;
 		case 'T':
 			enable_biastee = 1;
+			break;
+		case 'O':
+			enable_offset_tuning = 1;
 			break;
 		case 'D':
 			direct_sampling = 1;
@@ -504,6 +509,11 @@ int main(int argc, char **argv)
 	rtlsdr_set_bias_tee(dev, enable_biastee);
 	if (enable_biastee)
 		fprintf(stderr, "activated bias-T on GPIO PIN 0\n");
+	
+	/* Set offset tuning */
+	rtlsdr_set_offset_tuning(dev, enable_offset_tuning);
+	if (enable_offset_tuning)
+		fprintf(stderr, "activated offset tuning\n");
 
 	/* Reset endpoint before we start reading from it (mandatory) */
 	r = rtlsdr_reset_buffer(dev);
